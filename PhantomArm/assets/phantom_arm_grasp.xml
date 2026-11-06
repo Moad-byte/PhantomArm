@@ -1,0 +1,87 @@
+<mujoco model="PhantomArm Original 4-DOF Teleoperation Robot">
+  <compiler angle="radian" autolimits="true"/>
+  <option timestep="0.003" gravity="0 0 -9.81" integrator="implicitfast" iterations="100" noslip_iterations="5"/>
+  <visual><global azimuth="135" elevation="-22"/><headlight ambient="0.45 0.45 0.45" diffuse="0.55 0.55 0.55"/></visual>
+  <asset>
+    <texture name="checker" type="2d" builtin="checker" rgb1="0.15 0.18 0.22" rgb2="0.19 0.22 0.27" width="512" height="512"/>
+    <material name="ground" texture="checker" texrepeat="5 5" reflectance="0.12"/>
+    <material name="dark" rgba="0.12 0.18 0.23 1" specular="0.8" shininess="0.7"/>
+    <material name="teal" rgba="0.03 0.74 0.68 1" specular="0.6" shininess="0.45"/>
+    <material name="silver" rgba="0.72 0.78 0.82 1" specular="0.85" shininess="0.6"/>
+    <material name="orange" rgba="1 0.47 0.16 1"/>
+  </asset>
+  <default><joint damping="2.5" armature="0.012" limited="true"/><geom density="700" friction="1 0.01 0.001" contype="0" conaffinity="0"/></default>
+  <worldbody>
+    <light pos="-1 -1 3" dir="0.4 0.4 -1" diffuse="0.9 0.9 0.9"/>
+    <geom name="floor" type="plane" size="2 2 0.1" material="ground" contype="1" conaffinity="6" solref="0.003 1" solimp="0.95 0.99 0.001 0.5 2"/>
+    <geom name="base_plate" type="cylinder" pos="0 0 0.035" size="0.12 0.035" material="dark"/>
+    <geom name="base_column" type="cylinder" pos="0 0 0.105" size="0.075 0.07" material="silver"/>
+    <site name="workspace_goal" type="box" pos="0.38 0 0.35" size="0.009 0.009 0.009" rgba="1 0.7 0 0.7"/>
+    <body name="yaw_base" pos="0 0 0.16">
+      <joint name="base_yaw" type="hinge" axis="0 0 1" range="-1.55 1.55"/>
+      <geom type="cylinder" pos="0 0 0.025" size="0.082 0.04" material="teal"/>
+      <body name="upper_arm" pos="0 0 0.06">
+        <joint name="shoulder" type="hinge" axis="0 1 0" range="-1.65 1.65"/>
+        <geom type="sphere" size="0.068" material="dark"/>
+        <geom type="capsule" fromto="0 0 0 0.30 0 0" size="0.048" material="teal" contype="2" conaffinity="5"/>
+        <body name="forearm" pos="0.30 0 0">
+          <joint name="elbow" type="hinge" axis="0 1 0" range="-2.50 2.50"/>
+          <geom type="sphere" size="0.052" material="dark"/>
+          <geom type="capsule" fromto="0 0 0 0.26 0 0" size="0.035" material="silver" contype="2" conaffinity="5"/>
+          <body name="wrist" pos="0.26 0 0">
+            <joint name="wrist_pitch" type="hinge" axis="0 1 0" range="-2.80 2.80"/>
+            <geom type="sphere" size="0.041" material="teal"/>
+            <geom type="capsule" fromto="0 0 0 0.10 0 0" size="0.027" material="dark" contype="2" conaffinity="5"/>
+            <geom type="box" name="wrist_bridge_collision" pos="0.097 0 0" size="0.017 0.052 0.018" material="silver" contype="2" conaffinity="5"/>
+            <site name="tool_tip" pos="0.10 0 0" size="0.012" rgba="0 1 0.6 1"/>
+            <!-- Actual finger contact center is 50 mm beyond the IK wrist/tool site. -->
+            <site name="grip_center" pos="0.15 0 0.005" size="0.007" rgba="0 0.9 1 0.65"/>
+            <body name="left_finger" pos="0.12 0.028 0">
+              <joint name="finger_left" type="slide" axis="0 1 0" range="0 0.025" damping="1"/>
+              <geom name="left_pad_collision" type="box" pos="0.03 0 0.005" size="0.036 0.013 0.024" mass="0.012" material="orange" contype="2" conaffinity="5" friction="8.0 0.03 0.01" condim="4" solref="0.003 1" solimp="0.95 0.99 0.001 0.5 2"/>
+              <!-- Side friction pad; no under-grasp lips, allowing a stable full-width pickup platform. -->
+              
+            </body>
+            <body name="right_finger" pos="0.12 -0.028 0">
+              <joint name="finger_right" type="slide" axis="0 -1 0" range="0 0.025" damping="1"/>
+              <geom name="right_pad_collision" type="box" pos="0.03 0 0.005" size="0.036 0.013 0.024" mass="0.012" material="orange" contype="2" conaffinity="5" friction="8.0 0.03 0.01" condim="4" solref="0.003 1" solimp="0.95 0.99 0.001 0.5 2"/>
+              
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+
+    <!-- Independent 4.6-cm cube with 6-DOF free motion. No scripted attachment. -->
+    <!-- Collision groups: stands/floor=1, robot=2, cube=4.
+         Platforms collide with robot and cube. Robot internal geoms do not self-collide. -->
+    <body name="pickup_cube" pos="0.43 0.00 0.350">
+      <freejoint name="cube_free"/>
+      <geom name="cube_collision" type="box" size="0.023 0.023 0.023"
+            mass="0.010" rgba="1 0.58 0.16 1"
+            friction="5.0 0.03 0.01" condim="4"
+            contype="4" conaffinity="3"
+            solref="0.003 1" solimp="0.95 0.99 0.001 0.5 2"/>
+    </body>
+    <!-- Stable pickup platform. The stand is WIDER than the 46mm cube; the previous 22mm
+         narrow post let the cube tip and fall at startup. Side pads do the grasping. -->
+    <geom name="pickup_pedestal" type="box" pos="0.43 0.00 0.1635"
+          size="0.042 0.045 0.1635" rgba="0.25 0.33 0.42 1"
+          friction="1.4 0.02 0.002" contype="1" conaffinity="6"
+          solref="0.003 1" solimp="0.95 0.99 0.001 0.5 2"/>
+    <geom name="drop_pedestal" type="box" pos="0.43 0.12 0.1635"
+          size="0.048 0.053 0.1635" rgba="0.12 0.42 0.33 1"
+          friction="1.4 0.02 0.002" contype="1" conaffinity="6"
+          solref="0.003 1" solimp="0.95 0.99 0.001 0.5 2"/>
+    <site name="drop_zone" type="box" pos="0.43 0.12 0.334" size="0.030 0.030 0.004"
+          rgba="0.1 0.85 0.5 0.32"/>
+  </worldbody>
+  <actuator>
+    <position name="motor_yaw" joint="base_yaw" kp="170" kv="22" ctrlrange="-1.55 1.55"/>
+    <position name="motor_shoulder" joint="shoulder" kp="200" kv="24" ctrlrange="-1.65 1.65"/>
+    <position name="motor_elbow" joint="elbow" kp="160" kv="18" ctrlrange="-2.50 2.50"/>
+    <position name="motor_wrist" joint="wrist_pitch" kp="70" kv="10" ctrlrange="-2.80 2.80"/>
+    <position name="motor_left" joint="finger_left" kp="1500" kv="45" ctrlrange="0 0.025" forcerange="-45 45"/>
+    <position name="motor_right" joint="finger_right" kp="1500" kv="45" ctrlrange="0 0.025" forcerange="-45 45"/>
+  </actuator>
+</mujoco>

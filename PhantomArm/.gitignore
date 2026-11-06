@@ -1,0 +1,20 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.vscode/
+.DS_Store
+recordings/*.jsonl
+!recordings/sample_motion.jsonl
+logs/*
+!logs/.gitkeep
+media/private/*
+
+# Local installers, backups and test artifacts
+*.bak
+.cube_reset_backups/
+.phantomarm_reset_backups/
+*.zip
